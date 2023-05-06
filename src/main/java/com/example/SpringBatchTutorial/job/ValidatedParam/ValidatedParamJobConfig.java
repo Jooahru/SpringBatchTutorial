@@ -1,4 +1,6 @@
-package com.example.SpringBatchTutorial.job;
+package com.example.SpringBatchTutorial.job.ValidatedParam;
+
+import java.util.Arrays;
 
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
@@ -7,19 +9,23 @@ import org.springframework.batch.core.configuration.annotation.JobBuilderFactory
 import org.springframework.batch.core.configuration.annotation.JobScope;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepScope;
+import org.springframework.batch.core.job.CompositeJobParametersValidator;
 import org.springframework.batch.core.launch.support.RunIdIncrementer;
 import org.springframework.batch.core.scope.context.ChunkContext;
 import org.springframework.batch.core.step.tasklet.Tasklet;
 import org.springframework.batch.repeat.RepeatStatus;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import com.example.SpringBatchTutorial.job.ValidatedParam.Validator.FileParamValidator;
 
 import lombok.RequiredArgsConstructor;
 
 @Configuration
 @RequiredArgsConstructor
-public class HelloWorldJobConfig {
+public class ValidatedParamJobConfig {
 
 	@Autowired
 	private JobBuilderFactory jobBuilderFactory;
@@ -28,26 +34,33 @@ public class HelloWorldJobConfig {
 	private StepBuilderFactory stepBuilderFactory;
 
 	@Bean
-	public Job helloWorldJob() {
-		return jobBuilderFactory.get("helloWorldJob").incrementer(new RunIdIncrementer()).start(helloWorldStep())
-				.build();
+	public Job validatedParamJob(Step validatedParamStep) {
+		return jobBuilderFactory.get("validatedParamJob").incrementer(new RunIdIncrementer())
+				.validator(multipleValidate()).start(validatedParamStep).build();
+	}
+
+	/* Validator 여러개 사용하기 위한 함수 */
+	private CompositeJobParametersValidator multipleValidate() {
+		CompositeJobParametersValidator validator = new CompositeJobParametersValidator();
+		validator.setValidators(Arrays.asList(new FileParamValidator()));
+		return validator;
 	}
 
 	@JobScope
 	@Bean
-	public Step helloWorldStep() {
-		return stepBuilderFactory.get("helloWorldStep").tasklet(helloWorldTasklet()).build();
+	public Step validatedParamStep(Tasklet validatedParamTasklet) {
+		return stepBuilderFactory.get("validatedParamStep").tasklet(validatedParamTasklet).build();
 	}
 
 	@StepScope
 	@Bean
-	public Tasklet helloWorldTasklet() {
+	public Tasklet validatedParamTasklet(@Value("#{jobParameters['fileName']}") String fileName) {
 		return new Tasklet() {
 			@Override
 			public RepeatStatus execute(StepContribution contribution, ChunkContext chunkContext) throws Exception {
-			System.out.println("Hello World Spring Batch");
-			return RepeatStatus.FINISHED;
-			}	
+				System.out.println("validated Param Tasklet");
+				return RepeatStatus.FINISHED;
+			}
 		};
 	}
 }
