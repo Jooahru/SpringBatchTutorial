@@ -1,0 +1,11 @@
+spring:
+  batch:
+    job:
+      names: ${job.name:NONE}
+    jdbc:
+      initialize-schema: ALWAYS
+  datasource:
+    url:
+    dbcp2:
+      driver-class-name: 
+      
